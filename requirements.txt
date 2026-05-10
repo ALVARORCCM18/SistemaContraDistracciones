@@ -1,0 +1,7 @@
+opencv-python
+mediapipe
+ultralytics
+PySide6
+pyttsx3
+numpy
+pyyaml

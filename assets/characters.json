@@ -1,0 +1,42 @@
+{
+  "drowsiness": [
+    {
+      "name": "Sherlock Holmes",
+      "image": "assets/characters/sherlock.png",
+      "voice": "Sherlock Holmes",
+      "phrases": [
+        "Elemental, querido alumno: tu nivel de vigilia es digno de una novela muy corta.",
+        "Observo que estudiar y dormir te están pareciendo actividades intercambiables."
+      ]
+    },
+    {
+      "name": "Harry Potter",
+      "image": "assets/characters/harry.png",
+      "voice": "Harry Potter",
+      "phrases": [
+        "Vaya, parece que el Sombrero Seleccionador te ha enviado directamente a la siesta.",
+        "Necesitas menos hechizos y más descanso de calidad, pero ahora mismo no."
+      ]
+    }
+  ],
+  "phone": [
+    {
+      "name": "Taylor Swift",
+      "image": "assets/characters/taylor.png",
+      "voice": "Taylor Swift",
+      "phrases": [
+        "Eso no era una clase, era un scroll infinito con aires de drama.",
+        "Muy intenso el móvil, muy poco intenso el temario. Revisemos prioridades."
+      ]
+    },
+    {
+      "name": "Sherlock Holmes",
+      "image": "assets/characters/sherlock.png",
+      "voice": "Sherlock Holmes",
+      "phrases": [
+        "Caso resuelto: has sido sorprendido en flagrante uso del móvil.",
+        "La evidencia es clara, aunque tu capacidad de negación sea admirable."
+      ]
+    }
+  ]
+}

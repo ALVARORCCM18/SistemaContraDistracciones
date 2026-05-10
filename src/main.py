@@ -56,19 +56,23 @@ class DistractionMainWindow(QMainWindow):
         self.start_button = QPushButton("Iniciar")
         self.pause_button = QPushButton("Pausar")
         self.disable_button = QPushButton("Desactivar 5 min")
+        self.test_voice_button = QPushButton("Probar voz")
         self.stop_button = QPushButton("Finalizar")
         self.pause_button.setEnabled(False)
         self.disable_button.setEnabled(False)
+        self.test_voice_button.setEnabled(True)
         self.stop_button.setEnabled(False)
 
         self.start_button.clicked.connect(self.start_session)
         self.pause_button.clicked.connect(self.toggle_pause)
         self.disable_button.clicked.connect(self.disable_temporarily)
+        self.test_voice_button.clicked.connect(self.test_voice)
         self.stop_button.clicked.connect(self.stop_session)
 
         button_row.addWidget(self.start_button)
         button_row.addWidget(self.pause_button)
         button_row.addWidget(self.disable_button)
+        button_row.addWidget(self.test_voice_button)
         button_row.addWidget(self.stop_button)
 
         layout.addWidget(self.status_label)
@@ -80,18 +84,26 @@ class DistractionMainWindow(QMainWindow):
         self.timer.timeout.connect(self.process_frame)
 
     def start_session(self) -> None:
+        print("[DEBUG] start_session pressed")
+        self.status_label.setText("Iniciando...")
+        QApplication.processEvents()
+
         if self.camera is not None:
+            self.status_label.setText("La sesión ya está iniciada.")
             return
 
         try:
             self.camera = CameraStream(self.config.camera_index)
         except CameraError as exc:
-            QMessageBox.critical(self, "Error de cámara", str(exc))
+            msg = str(exc)
+            print(f"[ERROR] CameraError: {msg}")
+            QMessageBox.critical(self, "Error de cámara", msg)
             # Announce the camera error by voice as well
             try:
                 self.tts.speak_async("No se pudo acceder a la cámara. Comprueba permisos y cierra otras aplicaciones que la usen.")
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[ERROR] TTS during camera error: {e}")
+            self.status_label.setText("Error: no se pudo abrir la cámara")
             return
 
         self.drowsiness_detector = DrowsinessDetector(
@@ -110,8 +122,18 @@ class DistractionMainWindow(QMainWindow):
         # Announce start
         try:
             self.tts.speak_async("Iniciando vigilancia. Te avisaré si detecto distracciones.")
-        except Exception:
-            pass
+        except Exception as exc:
+            self.status_label.setText(f"Error TTS: {exc}")
+            return
+
+        # Check whether TTS engine is ready and show status if not
+        ready, err = self.tts.is_ready()
+        if not ready:
+            self.status_label.setText("Advertencia: el motor de voz no está disponible." + (f" Error: {err}" if err else ""))
+        else:
+            self.status_label.setText("Estado: vigilando la sesión (voz OK)")
+        QApplication.processEvents()
+        
 
     def toggle_pause(self) -> None:
         if self.camera is None or self.temp_disable_active:
@@ -151,6 +173,13 @@ class DistractionMainWindow(QMainWindow):
         except Exception:
             pass
         QTimer.singleShot(minutes * 60 * 1000, self.resume_after_temporary_disable)
+
+    def test_voice(self) -> None:
+        try:
+            self.tts.speak_async("Prueba de voz. Si escuchas esto, la voz funciona correctamente.")
+            self.status_label.setText("Prueba de voz enviada.")
+        except Exception as exc:
+            self.status_label.setText(f"Error al probar voz: {exc}")
 
     def resume_after_temporary_disable(self) -> None:
         if self.camera is None:

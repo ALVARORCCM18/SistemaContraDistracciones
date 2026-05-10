@@ -27,10 +27,16 @@ class AlertPopup(QDialog):
                 self.image_label.setPixmap(pixmap.scaledToWidth(260, Qt.SmoothTransformation))
             else:
                 self.image_label.setText("[Imagen del personaje]")
+                self.image_label.setStyleSheet("background: black; color: white;")
         else:
-            self.image_label.setText("[Imagen del personaje]")
+            # No image: show a solid black area to emphasize the popup
+            self.image_label.setText("")
+            self.image_label.setStyleSheet("background: black;")
 
         self.message_label = QLabel(message)
+        # If image is black, make message text white for visibility
+        if not image_path or (isinstance(image_path, (str, Path)) and not Path(image_path).exists()):
+            self.message_label.setStyleSheet("color: white; font-weight: bold;")
         self.message_label.setWordWrap(True)
         self.message_label.setAlignment(Qt.AlignCenter)
 

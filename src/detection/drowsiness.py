@@ -15,8 +15,7 @@ except Exception:
     except Exception:
         mp_solutions = None
 
-if mp_solutions is None:
-    raise RuntimeError("Mediapipe 'solutions' module not available. Please install 'mediapipe' package.")
+_MP_AVAILABLE = mp_solutions is not None
 
 from src.detection.tracker import choose_closest_face, compute_face_candidate
 
@@ -34,6 +33,9 @@ class DrowsinessResult:
 
 class DrowsinessDetector:
     def __init__(self, ear_threshold: float = 0.2, consecutive_frames: int = 6) -> None:
+        if not _MP_AVAILABLE:
+            raise RuntimeError("Mediapipe not available. Install 'mediapipe' to enable drowsiness detection.")
+
         self.ear_threshold = ear_threshold
         self.consecutive_frames = consecutive_frames
         self._frame_counter = 0

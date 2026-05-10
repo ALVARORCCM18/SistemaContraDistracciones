@@ -1,6 +1,7 @@
-# Sistema Anti Distracciones
+# SistemaContraDistracciones
 
 Aplicación de escritorio en Python para Windows que usa la webcam para detectar somnolencia y posible uso del móvil durante el estudio.
+El sistema avisa con una ventana emergente, una frase humorística y voz local.
 
 ## Próximo paso
 

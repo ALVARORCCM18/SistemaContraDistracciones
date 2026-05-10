@@ -106,11 +106,25 @@ class DistractionMainWindow(QMainWindow):
             self.status_label.setText("Error: no se pudo abrir la cámara")
             return
 
-        self.drowsiness_detector = DrowsinessDetector(
-            ear_threshold=self.config.drowsiness_eye_aspect_ratio_threshold,
-            consecutive_frames=self.config.drowsiness_consecutive_frames,
-        )
-        self.phone_detector = PhoneDetector(confidence=self.config.phone_detection_confidence)
+        # Initialize detectors (handle errors like missing mediapipe)
+        try:
+            self.drowsiness_detector = DrowsinessDetector(
+                ear_threshold=self.config.drowsiness_eye_aspect_ratio_threshold,
+                consecutive_frames=self.config.drowsiness_consecutive_frames,
+            )
+            self.phone_detector = PhoneDetector(confidence=self.config.phone_detection_confidence)
+        except Exception as exc:
+            errmsg = str(exc)
+            print(f"[ERROR] Detector init failed: {errmsg}")
+            QMessageBox.critical(self, "Error de detector", f"No se pudo inicializar detectores: {errmsg}")
+            try:
+                self.tts.speak_async("No se pudo inicializar los módulos de visión. Comprueba que mediapipe y ultralytics están instalados.")
+            except Exception:
+                pass
+            self.camera.release()
+            self.camera = None
+            self.status_label.setText("Error: detectores no inicializados")
+            return
         self.paused = False
         self.status_label.setText("Estado: vigilando la sesión")
         self.summary_label.setText("Resumen: sesión en curso")

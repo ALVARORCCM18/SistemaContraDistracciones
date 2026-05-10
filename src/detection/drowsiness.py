@@ -3,8 +3,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import cv2
-import mediapipe as mp
 import numpy as np
+
+# Import mediapipe solutions robustly (some installs expose differently)
+try:
+    from mediapipe import solutions as mp_solutions
+except Exception:
+    try:
+        import mediapipe as mp
+        mp_solutions = getattr(mp, "solutions", None)
+    except Exception:
+        mp_solutions = None
+
+if mp_solutions is None:
+    raise RuntimeError("Mediapipe 'solutions' module not available. Please install 'mediapipe' package.")
 
 from src.detection.tracker import choose_closest_face, compute_face_candidate
 
@@ -25,11 +37,11 @@ class DrowsinessDetector:
         self.ear_threshold = ear_threshold
         self.consecutive_frames = consecutive_frames
         self._frame_counter = 0
-        self._face_detection = mp.solutions.face_detection.FaceDetection(
+        self._face_detection = mp_solutions.face_detection.FaceDetection(
             model_selection=0,
             min_detection_confidence=0.5,
         )
-        self._mesh = mp.solutions.face_mesh.FaceMesh(
+        self._mesh = mp_solutions.face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=1,
             refine_landmarks=True,

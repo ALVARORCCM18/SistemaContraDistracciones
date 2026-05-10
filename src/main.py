@@ -16,6 +16,7 @@ from src.detection.drowsiness import DrowsinessDetector
 from src.detection.phone import PhoneDetector
 from src.stats.session import SessionStatistics
 from src.ui.popup import AlertPopup
+from src.ui.summary import SessionSummaryDialog
 
 
 @dataclass(slots=True)
@@ -40,6 +41,7 @@ class DistractionMainWindow(QMainWindow):
         self.drowsiness_detector: DrowsinessDetector | None = None
         self.phone_detector: PhoneDetector | None = None
         self.paused = False
+        self.temp_disable_active = False
         self.last_alert_at = datetime.min
         self._session_finished = False
 
@@ -53,16 +55,20 @@ class DistractionMainWindow(QMainWindow):
         button_row = QHBoxLayout()
         self.start_button = QPushButton("Iniciar")
         self.pause_button = QPushButton("Pausar")
+        self.disable_button = QPushButton("Desactivar 5 min")
         self.stop_button = QPushButton("Finalizar")
         self.pause_button.setEnabled(False)
+        self.disable_button.setEnabled(False)
         self.stop_button.setEnabled(False)
 
         self.start_button.clicked.connect(self.start_session)
         self.pause_button.clicked.connect(self.toggle_pause)
+        self.disable_button.clicked.connect(self.disable_temporarily)
         self.stop_button.clicked.connect(self.stop_session)
 
         button_row.addWidget(self.start_button)
         button_row.addWidget(self.pause_button)
+        button_row.addWidget(self.disable_button)
         button_row.addWidget(self.stop_button)
 
         layout.addWidget(self.status_label)
@@ -93,11 +99,12 @@ class DistractionMainWindow(QMainWindow):
         self.summary_label.setText("Resumen: sesión en curso")
         self.start_button.setEnabled(False)
         self.pause_button.setEnabled(True)
+        self.disable_button.setEnabled(True)
         self.stop_button.setEnabled(True)
         self.timer.start(int(self.config.detection_interval_seconds * 1000))
 
     def toggle_pause(self) -> None:
-        if self.camera is None:
+        if self.camera is None or self.temp_disable_active:
             return
 
         self.paused = not self.paused
@@ -109,6 +116,31 @@ class DistractionMainWindow(QMainWindow):
             self.stats.resume()
             self.status_label.setText("Estado: vigilando la sesión")
             self.pause_button.setText("Pausar")
+
+    def disable_temporarily(self, minutes: int = 5) -> None:
+        if self.camera is None or self.temp_disable_active:
+            return
+
+        self.temp_disable_active = True
+        self.paused = True
+        self.stats.pause()
+        self.status_label.setText(f"Estado: desactivado temporalmente ({minutes} min)")
+        self.pause_button.setEnabled(False)
+        self.disable_button.setEnabled(False)
+        self.pause_button.setText("Pausar")
+        QTimer.singleShot(minutes * 60 * 1000, self.resume_after_temporary_disable)
+
+    def resume_after_temporary_disable(self) -> None:
+        if self.camera is None:
+            return
+
+        self.temp_disable_active = False
+        self.paused = False
+        self.stats.resume()
+        self.status_label.setText("Estado: vigilando la sesión")
+        self.pause_button.setEnabled(True)
+        self.disable_button.setEnabled(True)
+        self.pause_button.setText("Pausar")
 
     def stop_session(self) -> None:
         self.close()
@@ -179,12 +211,15 @@ class DistractionMainWindow(QMainWindow):
         sessions_dir.mkdir(exist_ok=True)
         report_path = sessions_dir / f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         self.stats.save(report_path)
+        summary_dialog = SessionSummaryDialog(self.stats, self)
+        summary_dialog.exec()
         self.summary_label.setText(f"Resumen final: {self.stats.summary()}")
         if self.camera is not None:
             self.camera.release()
             self.camera = None
         self.start_button.setEnabled(True)
         self.pause_button.setEnabled(False)
+        self.disable_button.setEnabled(False)
         self.stop_button.setEnabled(False)
         return 0
 

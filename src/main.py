@@ -87,6 +87,11 @@ class DistractionMainWindow(QMainWindow):
             self.camera = CameraStream(self.config.camera_index)
         except CameraError as exc:
             QMessageBox.critical(self, "Error de cámara", str(exc))
+            # Announce the camera error by voice as well
+            try:
+                self.tts.speak_async("No se pudo acceder a la cámara. Comprueba permisos y cierra otras aplicaciones que la usen.")
+            except Exception:
+                pass
             return
 
         self.drowsiness_detector = DrowsinessDetector(
@@ -102,6 +107,11 @@ class DistractionMainWindow(QMainWindow):
         self.disable_button.setEnabled(True)
         self.stop_button.setEnabled(True)
         self.timer.start(int(self.config.detection_interval_seconds * 1000))
+        # Announce start
+        try:
+            self.tts.speak_async("Iniciando vigilancia. Te avisaré si detecto distracciones.")
+        except Exception:
+            pass
 
     def toggle_pause(self) -> None:
         if self.camera is None or self.temp_disable_active:
@@ -112,10 +122,18 @@ class DistractionMainWindow(QMainWindow):
             self.stats.pause()
             self.status_label.setText("Estado: en pausa")
             self.pause_button.setText("Reanudar")
+            try:
+                self.tts.speak_async("Pausa activada.")
+            except Exception:
+                pass
         else:
             self.stats.resume()
             self.status_label.setText("Estado: vigilando la sesión")
             self.pause_button.setText("Pausar")
+            try:
+                self.tts.speak_async("Reanudando vigilancia.")
+            except Exception:
+                pass
 
     def disable_temporarily(self, minutes: int = 5) -> None:
         if self.camera is None or self.temp_disable_active:
@@ -128,6 +146,10 @@ class DistractionMainWindow(QMainWindow):
         self.pause_button.setEnabled(False)
         self.disable_button.setEnabled(False)
         self.pause_button.setText("Pausar")
+        try:
+            self.tts.speak_async(f"Desactivado temporalmente por {minutes} minutos.")
+        except Exception:
+            pass
         QTimer.singleShot(minutes * 60 * 1000, self.resume_after_temporary_disable)
 
     def resume_after_temporary_disable(self) -> None:
@@ -141,6 +163,10 @@ class DistractionMainWindow(QMainWindow):
         self.pause_button.setEnabled(True)
         self.disable_button.setEnabled(True)
         self.pause_button.setText("Pausar")
+        try:
+            self.tts.speak_async("He reanudado la vigilancia.")
+        except Exception:
+            pass
 
     def stop_session(self) -> None:
         self.close()
